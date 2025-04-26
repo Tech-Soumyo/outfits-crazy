@@ -1,0 +1,148 @@
+🎨 Fashion Stylizer: Technical Documentation 🚀
+
+1. TOOLS AND LIBRARIES 🛠️
+-------------------------
+1.1. Frontend Framework:
+- Next.js 15.3.1 with TypeScript
+- React 19.0.0
+- App Router architecture for server-side and client-side rendering
+
+1.2. AI/ML Services:
+- Google Cloud Platform (GCP) Vertex AI (Imagen 3.0-generate-002)
+- GCP Vision API for image analysis
+- @google-cloud/vertexai for Vertex AI integration
+- @google-cloud/vision for Vision API integration
+
+1.3. UI Components:
+- Shadcn UI components (based on Radix UI)
+- Tailwind CSS for styling
+- Class Variance Authority for component variants
+- Lucide React for icons
+
+1.4. Data Handling:
+- Axios for API requests
+- Multer for file uploads
+- UUID for unique filename generation
+- Zod for runtime type checking
+
+2. OUTFIT CONSISTENCY STRATEGY 🎯
+-------------------------------
+2.1. Vision API Analysis Pipeline:
+- Image uploaded → Vision API analyzes:
+  * Labels (garment types, styles)
+  * Colors (RGB values of dominant colors)
+  * Objects (specific clothing items)
+
+2.2. Data Processing:
+```typescript
+// From vision.ts
+const labels = labelResult.labelAnnotations
+  ?.map((label) => label.description)
+  .filter((label): label is string => !!label) || [];
+
+const colors = colorResult.imagePropertiesAnnotation?.dominantColors?.colors
+  ?.map((color) =>
+    color.color?.red !== undefined &&
+    color.color?.green !== undefined &&
+    color.color?.blue !== undefined
+      ? `RGB(${color.color.red},${color.color.green},${color.color.blue})`
+      : null
+  )
+  .filter((color): color is string => !!color) || [];
+```
+
+2.3. Consistency Maintenance:
+- Original outfit colors preserved in prompts
+- Specific garment types maintained across variations
+- Consistent model gender specified in prompts
+- Style transfer while maintaining core outfit elements
+
+3. SAMPLE PROMPTS AND WORKFLOW 📝
+------------------------------
+3.1. Prompt Structure:
+Base Template: "[Gender] model wearing [Color] [Garment] styled for [Occasion], Pinterest editorial style"
+
+Examples:
+- Office: "Female model wearing RGB(120,30,45) blazer styled for a professional office setting, Pinterest editorial style, clean background, realistic lighting"
+- Party: "Male model wearing RGB(0,0,0) suit styled for a glamorous party, Pinterest editorial style, vibrant lighting, elegant accessories"
+- Vacation: "Female model wearing RGB(200,150,100) sundress styled for a tropical vacation, Pinterest editorial style, beach background, bright colors"
+
+3.2. Workflow Pipeline:
+1. Image Upload → /api/generate route
+2. Vision API Analysis → Extract outfit details
+3. Prompt Generation → Based on occasion and outfit details
+4. Image Generation → Vertex AI Imagen
+5. Save & Display → Store in public/output
+
+4. AUTOMATION CODE HIGHLIGHTS 💻
+-----------------------------
+4.1. Vision API Integration:
+```typescript
+// From vision.ts
+export async function analyzeImageDetails(imagePath: string) {
+  const [labelResult] = await client.labelDetection(imagePath);
+  const [colorResult] = await client.imageProperties(imagePath);
+  const [objectResult] = await client.objectLocalization!(imagePath);
+  
+  // Process and return structured data
+  return { labels, colors, objects };
+}
+```
+
+4.2. Prompt Generation:
+```typescript
+// From generate/route.ts
+function createPrompt(
+  outfit: OutfitDetails,
+  occasion: "Office" | "Party" | "Vacation"
+): string {
+  const base = `${outfit.colors[0]} ${outfit.labels.join(" ")}`;
+  switch (occasion) {
+    case "Office":
+      return `${base} styled for a professional office setting...`;
+    case "Party":
+      return `${base} styled for a glamorous party...`;
+    case "Vacation":
+      return `${base} styled for a tropical vacation...`;
+  }
+}
+```
+
+4.3. Image Generation:
+```typescript
+// From generate/route.ts
+const { image } = await generateImage({
+  model: vertex.image({
+    model: "imagegeneration@005",
+    location: process.env.GOOGLE_VERTEX_LOCATION || "us-central1",
+    project: process.env.GOOGLE_CLOUD_PROJECT
+  }),
+  prompt,
+  n: 1,
+});
+```
+
+4.4. File Handling:
+```typescript
+// Save generated images with unique IDs
+const filename = `outfit_${uuidv4()}_${occasion}.${extension}`;
+await fs.writeFile(filePath, Buffer.from(image.uint8Array));
+```
+
+5. ENVIRONMENT SETUP 🔧
+---------------------
+Required Environment Variables:
+- GOOGLE_CLOUD_PROJECT
+- GOOGLE_VERTEX_LOCATION
+- GOOGLE_APPLICATION_CREDENTIALS
+
+Directory Structure:
+- public/
+  - output/ (generated images)
+  - uploads/ (original uploads)
+- src/
+  - app/ (Next.js app router)
+  - components/ (React components)
+  - lib/ (utility functions)
+
+This documentation covers the technical implementation of the Fashion Stylizer project. For setup instructions, refer to the README.md file.
