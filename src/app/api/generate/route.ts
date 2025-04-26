@@ -1,4 +1,3 @@
-// src/app/api/generate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { experimental_generateImage as generateImage } from "ai";
 import { vertex } from "@ai-sdk/google-vertex";
@@ -13,22 +12,22 @@ interface OutfitDetails {
   objects: string[];
 }
 
-function createPrompt(
+function prompts(
   outfit: OutfitDetails,
   occasion: "Office" | "Party" | "Vacation",
   gender: "Male" | "Female"
 ): string {
-  const base = `${outfit.colors[0]} ${outfit.labels.join(" ")}`;
-  const modelGender = gender === "Male" ? "male model" : "female model";
+  const vision = `${outfit.colors[0]} ${outfit.labels.join(" ")}`;
+  const genderOption = gender === "Male" ? "male model" : "female model";
   switch (occasion) {
     case "Office":
-      return `A high-end editorial fashion photograph featuring a ${modelGender} model dressed in a complete outfit inspired by a ${base}. The look is styled elegantly for a modern office environment — think smart-casual to business-formal — incorporating complementary clothing pieces, footwear, and accessories. The overall aesthetic is polished yet fashion-forward, aligned with Pinterest and editorial style guides. Neutral background, soft and balanced studio lighting, full-body shot, realistic textures, and detailed fabrics.`;
+      return `A high-end editorial fashion photograph featuring a ${genderOption} model dressed in a complete outfit inspired by a ${vision}. The look is styled elegantly for a modern office environment — think smart-casual to business-formal — incorporating complementary clothing pieces, footwear, and accessories. The overall aesthetic is polished yet fashion-forward, aligned with Pinterest and editorial style guides. Neutral background, soft and balanced studio lighting, full-body shot, realistic textures, and detailed fabrics.`;
 
     case "Party":
-      return `A striking editorial fashion photograph of a ${modelGender} model wearing a full outfit inspired by a ${base}, styled for an upscale party or evening event. The ensemble includes chic, coordinated clothing pieces, stylish footwear, and bold accessories that elevate the original item into a glamorous look. The aesthetic is trendy, vibrant, and Pinterest-worthy, with a neutral backdrop, clean dynamic lighting, and a full-body view. Focus on elegance, movement, and confident poses.`;
+      return `A striking editorial fashion photograph of a ${genderOption} model wearing a full outfit inspired by a ${vision}, styled for an upscale party or evening event. The ensemble includes chic, coordinated clothing pieces, stylish footwear, and bold accessories that elevate the original item into a glamorous look. The aesthetic is trendy, vibrant, and Pinterest-worthy, with a neutral backdrop, clean dynamic lighting, and a full-body view. Focus on elegance, movement, and confident poses.`;
 
     case "Vacation":
-      return `An editorial-style fashion photo featuring a ${modelGender} model in a full vacation-ready outfit inspired by a ${base}. The outfit is relaxed, stylish, and travel-appropriate — featuring complementary clothing pieces, footwear, and accessories that balance comfort and trendiness. The aesthetic is vibrant yet realistic, aligned with Pinterest/editorial standards. Neutral background mimicking natural daylight, soft shadows, full-body shot capturing a laid-back yet polished vibe.`;
+      return `An editorial-style fashion photo featuring a ${genderOption} model in a full vacation-ready outfit inspired by a ${vision}. The outfit is relaxed, stylish, and travel-appropriate — featuring complementary clothing pieces, footwear, and accessories that balance comfort and trendiness. The aesthetic is vibrant yet realistic, aligned with Pinterest/editorial standards. Neutral background mimicking natural daylight, soft shadows, full-body shot capturing a laid-back yet polished vibe.`;
 
     default:
       throw new Error("Invalid occasion");
@@ -73,7 +72,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prompt = createPrompt(
+    const prompt = prompts(
       outfit,
       occasion as "Office" | "Party" | "Vacation",
       gender as "Male" | "Female"
